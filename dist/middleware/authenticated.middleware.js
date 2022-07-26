@@ -39,42 +39,51 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var express_1 = require("express");
+var token_1 = __importDefault(require("@/utils/token"));
+// import { verifyToken } from "@/utils/token";
+var user_model_1 = __importDefault(require("@/resources/user/user.model"));
 var http_exception_1 = __importDefault(require("@/utils/exceptions/http.exception"));
-var validation_middleware_1 = __importDefault(require("@/middleware/validation.middleware"));
-var post_validation_1 = __importDefault(require("./post.validation"));
-var post_service_1 = __importDefault(require("./post.service"));
-var PostController = /** @class */ (function () {
-    function PostController() {
-        var _this = this;
-        this.path = "/posts";
-        this.router = (0, express_1.Router)();
-        this.PostService = new post_service_1.default();
-        this.create = function (req, res, next) { return __awaiter(_this, void 0, void 0, function () {
-            var _a, title, body, post, error_1;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        _b.trys.push([0, 2, , 3]);
-                        _a = req.body, title = _a.title, body = _a.body;
-                        return [4 /*yield*/, this.PostService.create(title, body)];
-                    case 1:
-                        post = _b.sent();
-                        res.status(201).json({ post: post });
-                        return [3 /*break*/, 3];
-                    case 2:
-                        error_1 = _b.sent();
-                        next(new http_exception_1.default(400, "cannot create post"));
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        }); };
-        this.initialiseRoutes();
-    }
-    PostController.prototype.initialiseRoutes = function () {
-        this.router.post("".concat(this.path), (0, validation_middleware_1.default)(post_validation_1.default.create), this.create);
-    };
-    return PostController;
-}());
-exports.default = PostController;
+var jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+function authenticatedMiddleware(req, res, next) {
+    return __awaiter(this, void 0, void 0, function () {
+        var bearer, accessToken, payload, user, error_1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    bearer = req.headers.authorization;
+                    console.log(bearer);
+                    if (!bearer || !bearer.startsWith("Bearer ")) {
+                        return [2 /*return*/, next(new http_exception_1.default(401, "Unauthorised"))];
+                    }
+                    accessToken = bearer.split("Bearer ")[1].trim();
+                    console.log(accessToken);
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 4, , 5]);
+                    return [4 /*yield*/, token_1.default.verifyToken(accessToken)];
+                case 2:
+                    payload = _a.sent();
+                    console.log(payload);
+                    if (payload instanceof jsonwebtoken_1.default.JsonWebTokenError) {
+                        return [2 /*return*/, next(new http_exception_1.default(401, "Unauthorised"))];
+                    }
+                    return [4 /*yield*/, user_model_1.default
+                            .findById(payload.id)
+                            .select("-password")
+                            .exec()];
+                case 3:
+                    user = _a.sent();
+                    if (!user) {
+                        return [2 /*return*/, next(new http_exception_1.default(401, "Unauthorised"))];
+                    }
+                    req.user = user;
+                    return [2 /*return*/, next()];
+                case 4:
+                    error_1 = _a.sent();
+                    return [2 /*return*/, next(new http_exception_1.default(401, "Unauthorised"))];
+                case 5: return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.default = authenticatedMiddleware;

@@ -39,42 +39,54 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var express_1 = require("express");
-var http_exception_1 = __importDefault(require("@/utils/exceptions/http.exception"));
-var validation_middleware_1 = __importDefault(require("@/middleware/validation.middleware"));
-var post_validation_1 = __importDefault(require("./post.validation"));
-var post_service_1 = __importDefault(require("./post.service"));
-var PostController = /** @class */ (function () {
-    function PostController() {
-        var _this = this;
-        this.path = "/posts";
-        this.router = (0, express_1.Router)();
-        this.PostService = new post_service_1.default();
-        this.create = function (req, res, next) { return __awaiter(_this, void 0, void 0, function () {
-            var _a, title, body, post, error_1;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        _b.trys.push([0, 2, , 3]);
-                        _a = req.body, title = _a.title, body = _a.body;
-                        return [4 /*yield*/, this.PostService.create(title, body)];
-                    case 1:
-                        post = _b.sent();
-                        res.status(201).json({ post: post });
-                        return [3 /*break*/, 3];
-                    case 2:
-                        error_1 = _b.sent();
-                        next(new http_exception_1.default(400, "cannot create post"));
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        }); };
-        this.initialiseRoutes();
-    }
-    PostController.prototype.initialiseRoutes = function () {
-        this.router.post("".concat(this.path), (0, validation_middleware_1.default)(post_validation_1.default.create), this.create);
-    };
-    return PostController;
-}());
-exports.default = PostController;
+var mongoose_1 = require("mongoose");
+var bcrypt_1 = __importDefault(require("bcrypt"));
+var UserSchema = new mongoose_1.Schema({
+    name: {
+        type: String,
+        required: true,
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+    },
+    password: {
+        type: String,
+    },
+    role: {
+        type: String,
+        required: true,
+    },
+}, { timestamps: true });
+UserSchema.pre("save", function (next) {
+    return __awaiter(this, void 0, void 0, function () {
+        var hash;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (!this.isModified("password")) {
+                        return [2 /*return*/, next()];
+                    }
+                    return [4 /*yield*/, bcrypt_1.default.hash(this.password, 10)];
+                case 1:
+                    hash = _a.sent();
+                    this.password = hash;
+                    next();
+                    return [2 /*return*/];
+            }
+        });
+    });
+});
+UserSchema.methods.isValidPassword = function (password) {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, bcrypt_1.default.compare(password, this.password)];
+                case 1: return [2 /*return*/, _a.sent()];
+            }
+        });
+    });
+};
+exports.default = (0, mongoose_1.model)("User", UserSchema);

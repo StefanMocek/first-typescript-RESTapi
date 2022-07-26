@@ -42,39 +42,68 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = require("express");
 var http_exception_1 = __importDefault(require("@/utils/exceptions/http.exception"));
 var validation_middleware_1 = __importDefault(require("@/middleware/validation.middleware"));
-var post_validation_1 = __importDefault(require("./post.validation"));
-var post_service_1 = __importDefault(require("./post.service"));
-var PostController = /** @class */ (function () {
-    function PostController() {
+var user_validation_1 = __importDefault(require("@/resources/user/user.validation"));
+var user_service_1 = __importDefault(require("./user.service"));
+var authenticated_middleware_1 = __importDefault(require("@/middleware/authenticated.middleware"));
+var UserController = /** @class */ (function () {
+    function UserController() {
         var _this = this;
-        this.path = "/posts";
+        this.path = "/users";
         this.router = (0, express_1.Router)();
-        this.PostService = new post_service_1.default();
-        this.create = function (req, res, next) { return __awaiter(_this, void 0, void 0, function () {
-            var _a, title, body, post, error_1;
+        this.UserService = new user_service_1.default();
+        this.register = function (req, res, next) { return __awaiter(_this, void 0, void 0, function () {
+            var _a, name_1, email, password, token, error_1;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         _b.trys.push([0, 2, , 3]);
-                        _a = req.body, title = _a.title, body = _a.body;
-                        return [4 /*yield*/, this.PostService.create(title, body)];
+                        _a = req.body, name_1 = _a.name, email = _a.email, password = _a.password;
+                        return [4 /*yield*/, this.UserService.register(name_1, email, password, "user")];
                     case 1:
-                        post = _b.sent();
-                        res.status(201).json({ post: post });
+                        token = _b.sent();
+                        res.status(201).json({ token: token });
                         return [3 /*break*/, 3];
                     case 2:
                         error_1 = _b.sent();
-                        next(new http_exception_1.default(400, "cannot create post"));
+                        next(new http_exception_1.default(400, error_1.message));
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
             });
         }); };
+        this.login = function (req, res, next) { return __awaiter(_this, void 0, void 0, function () {
+            var _a, email, password, token, error_2;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _b.trys.push([0, 2, , 3]);
+                        _a = req.body, email = _a.email, password = _a.password;
+                        return [4 /*yield*/, this.UserService.login(email, password)];
+                    case 1:
+                        token = _b.sent();
+                        res.status(200).json({ token: token });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_2 = _b.sent();
+                        next(new http_exception_1.default(400, error_2.message));
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        }); };
+        this.getUser = function (req, res, next) {
+            if (!req.user) {
+                return next(new http_exception_1.default(400, "no logged user"));
+            }
+            res.status(200).json({ user: req.user });
+        };
         this.initialiseRoutes();
     }
-    PostController.prototype.initialiseRoutes = function () {
-        this.router.post("".concat(this.path), (0, validation_middleware_1.default)(post_validation_1.default.create), this.create);
+    UserController.prototype.initialiseRoutes = function () {
+        this.router.post("".concat(this.path, "/register"), (0, validation_middleware_1.default)(user_validation_1.default.register), this.register);
+        this.router.post("".concat(this.path, "/login"), (0, validation_middleware_1.default)(user_validation_1.default.login), this.login);
+        this.router.get("".concat(this.path), authenticated_middleware_1.default, this.getUser);
     };
-    return PostController;
+    return UserController;
 }());
-exports.default = PostController;
+exports.default = UserController;

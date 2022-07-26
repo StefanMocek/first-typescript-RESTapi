@@ -39,42 +39,24 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var express_1 = require("express");
-var http_exception_1 = __importDefault(require("@/utils/exceptions/http.exception"));
-var validation_middleware_1 = __importDefault(require("@/middleware/validation.middleware"));
-var post_validation_1 = __importDefault(require("./post.validation"));
-var post_service_1 = __importDefault(require("./post.service"));
-var PostController = /** @class */ (function () {
-    function PostController() {
-        var _this = this;
-        this.path = "/posts";
-        this.router = (0, express_1.Router)();
-        this.PostService = new post_service_1.default();
-        this.create = function (req, res, next) { return __awaiter(_this, void 0, void 0, function () {
-            var _a, title, body, post, error_1;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        _b.trys.push([0, 2, , 3]);
-                        _a = req.body, title = _a.title, body = _a.body;
-                        return [4 /*yield*/, this.PostService.create(title, body)];
-                    case 1:
-                        post = _b.sent();
-                        res.status(201).json({ post: post });
-                        return [3 /*break*/, 3];
-                    case 2:
-                        error_1 = _b.sent();
-                        next(new http_exception_1.default(400, "cannot create post"));
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        }); };
-        this.initialiseRoutes();
-    }
-    PostController.prototype.initialiseRoutes = function () {
-        this.router.post("".concat(this.path), (0, validation_middleware_1.default)(post_validation_1.default.create), this.create);
-    };
-    return PostController;
-}());
-exports.default = PostController;
+exports.verifyToken = exports.createToken = void 0;
+var jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+var createToken = function (user) {
+    return jsonwebtoken_1.default.sign({ id: user.id }, process.env.JWT_SECRET, {
+        expiresIn: "1d",
+    });
+};
+exports.createToken = createToken;
+var verifyToken = function (token) { return __awaiter(void 0, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        return [2 /*return*/, new Promise(function (resolve, reject) {
+                jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET, function (err, payload) {
+                    if (err)
+                        return reject(err);
+                    resolve(payload);
+                });
+            })];
+    });
+}); };
+exports.verifyToken = verifyToken;
+exports.default = { createToken: exports.createToken, verifyToken: exports.verifyToken };

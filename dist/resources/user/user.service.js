@@ -39,42 +39,68 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var express_1 = require("express");
-var http_exception_1 = __importDefault(require("@/utils/exceptions/http.exception"));
-var validation_middleware_1 = __importDefault(require("@/middleware/validation.middleware"));
-var post_validation_1 = __importDefault(require("./post.validation"));
-var post_service_1 = __importDefault(require("./post.service"));
-var PostController = /** @class */ (function () {
-    function PostController() {
-        var _this = this;
-        this.path = "/posts";
-        this.router = (0, express_1.Router)();
-        this.PostService = new post_service_1.default();
-        this.create = function (req, res, next) { return __awaiter(_this, void 0, void 0, function () {
-            var _a, title, body, post, error_1;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+var user_model_1 = __importDefault(require("@/resources/user/user.model"));
+var token_1 = __importDefault(require("@/utils/token"));
+var UserService = /** @class */ (function () {
+    function UserService() {
+        this.user = user_model_1.default;
+    }
+    /**
+     * REgister a new user
+     */
+    UserService.prototype.register = function (name, email, password, role) {
+        return __awaiter(this, void 0, void 0, function () {
+            var user, accesToken, error_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
-                        _b.trys.push([0, 2, , 3]);
-                        _a = req.body, title = _a.title, body = _a.body;
-                        return [4 /*yield*/, this.PostService.create(title, body)];
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, this.user.create({ name: name, email: email, password: password, role: role })];
                     case 1:
-                        post = _b.sent();
-                        res.status(201).json({ post: post });
-                        return [3 /*break*/, 3];
+                        user = _a.sent();
+                        accesToken = token_1.default.createToken(user);
+                        return [2 /*return*/, accesToken];
                     case 2:
-                        error_1 = _b.sent();
-                        next(new http_exception_1.default(400, "cannot create post"));
-                        return [3 /*break*/, 3];
+                        error_1 = _a.sent();
+                        throw new Error("unable to create new user");
                     case 3: return [2 /*return*/];
                 }
             });
-        }); };
-        this.initialiseRoutes();
-    }
-    PostController.prototype.initialiseRoutes = function () {
-        this.router.post("".concat(this.path), (0, validation_middleware_1.default)(post_validation_1.default.create), this.create);
+        });
     };
-    return PostController;
+    /**
+     * attempt to login a user
+     */
+    UserService.prototype.login = function (email, password) {
+        return __awaiter(this, void 0, void 0, function () {
+            var user, error_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        return [4 /*yield*/, this.user.findOne({ email: email })];
+                    case 1:
+                        user = _a.sent();
+                        if (!user) {
+                            throw new Error("Unable to find user with that email");
+                        }
+                        return [4 /*yield*/, user.isValidPassword(password)];
+                    case 2:
+                        if (_a.sent()) {
+                            return [2 /*return*/, token_1.default.createToken(user)];
+                        }
+                        else {
+                            throw new Error("wrong credentials giver");
+                        }
+                        return [3 /*break*/, 4];
+                    case 3:
+                        error_2 = _a.sent();
+                        throw new Error("Unable to login the uesr");
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    return UserService;
 }());
-exports.default = PostController;
+exports.default = UserService;
